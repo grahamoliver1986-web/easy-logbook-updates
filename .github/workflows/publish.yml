@@ -1,0 +1,44 @@
+name: Publish verified APK release
+on:
+  workflow_dispatch:
+    inputs:
+      archive_url:
+        description: Temporary HTTPS download for the successful signed APK artifact
+        required: true
+      archive_sha256:
+        description: SHA256 reported by the successful private build
+        required: true
+      version_code:
+        description: Increasing Android version code
+        required: true
+      version_name:
+        description: Release version, for example 0.25
+        required: true
+permissions:
+  contents: write
+concurrency:
+  group: publish
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download and verify signed APKs
+        env:
+          ARCHIVE_URL: ${{ inputs.archive_url }}
+          ARCHIVE_SHA256: ${{ inputs.archive_sha256 }}
+          VERSION_CODE: ${{ inputs.version_code }}
+          VERSION_NAME: ${{ inputs.version_name }}
+        run: python3 verify-release.py
+      - name: Publish both APKs and update feed together
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION_NAME: ${{ inputs.version_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release create "v$VERSION_NAME" --draft --title "Easy Logbook $VERSION_NAME" --notes "Signed Phone and Car APKs. Install over your existing app without uninstalling. Field-test release."
+          gh release upload "v$VERSION_NAME" release/*.apk release/latest.json
+          gh release edit "v$VERSION_NAME" --draft=false --latest
