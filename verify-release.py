@@ -19,6 +19,7 @@ for role in ['car','phone']:
  name=f'Easy-Logbook-{version}-{role.title()}.apk';entry=z.getinfo(entries[name]);assert 0<entry.file_size<=30000000
  p=out/name;p.write_bytes(z.read(entry))
  cert=subprocess.check_output([str(tools/'apksigner'),'verify','--verbose','--print-certs',str(p)],text=True)
+ print('APK signature verification:', cert)
  assert f'Signer #1 certificate SHA-256 digest: {expected}' in cert
  badge=subprocess.check_output([str(tools/'aapt'),'dump','badging',str(p)],text=True)
  assert f"name='appinventor.ai_grahamoliver1986.EasyLogbook05' versionCode='{code}' versionName='{version}'" in badge.splitlines()[0]
